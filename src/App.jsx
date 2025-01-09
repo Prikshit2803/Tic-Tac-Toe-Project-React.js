@@ -5,7 +5,12 @@ import Log from "./components/Log.jsx";
 import Player from "./components/Player";
 import { WINNING_COMBINATIONS } from "./winning-combinations.jsx";
 
-const initialGameBoard = [
+
+const PLAYERS = {
+  X : 'Player 1',
+  O : 'Player 2'
+};
+const  INITIAL_GAME_BOARD = [
   [null, null, null],
   [null, null, null],
   [null, null, null],
@@ -22,12 +27,21 @@ function deriveActivePlayer(gameTurns){
   return currentPlayer;
 }
 
-function App() {
-  
-  // const [activePLayer,setActivePlayer] = useState('X');
-  const [gameTurns,setGameTurns] = useState([]);
+function deriveWinner(gameBoard,players){
+  for(const combination of WINNING_COMBINATIONS){
+    const firstSquareSymbol = gameBoard[combination[0].row][combination[0].column];
+    const secondSquareSymbol = gameBoard[combination[1].row][combination[1].column];
+    const thirdSquareSymbol = gameBoard[combination[2].row][combination[2].column];
 
-  let gameBoard = [...initialGameBoard.map(array => [...array])]; //without deep-copy the restart match wouldnt work, as gameboard= initialBoard is a bug as initialBoard is passed by reference and cant be actually reset ...refer lec. 93
+    if(firstSquareSymbol && firstSquareSymbol === secondSquareSymbol && firstSquareSymbol === thirdSquareSymbol){
+      return players[firstSquareSymbol];
+    }
+  }
+  return undefined;
+}
+
+function deriveGameBoard(gameTurns){
+  let gameBoard = [...INITIAL_GAME_BOARD.map(array => [...array])]; //without deep-copy the restart match wouldnt work, as gameboard= initialBoard is a bug as initialBoard is passed by reference and cant be actually reset ...refer lec. 93
 
     for( const turn of gameTurns){
         const {square , player} = turn;
@@ -36,22 +50,21 @@ function App() {
         gameBoard[row][col] = player;
     }
 
-    let winner;
+    return gameBoard;
+}
 
-    for(const combination of WINNING_COMBINATIONS){
-      const firstSquareSymbol = gameBoard[combination[0].row][combination[0].column];
-      const secondSquareSymbol = gameBoard[combination[1].row][combination[1].column];
-      const thirdSquareSymbol = gameBoard[combination[2].row][combination[2].column];
 
-      if(firstSquareSymbol && firstSquareSymbol === secondSquareSymbol && firstSquareSymbol === thirdSquareSymbol){
-        winner = firstSquareSymbol;
-      }
-    }
+function App() {
+  const [gameTurns,setGameTurns] = useState([]);
+  const [players,setPlayers] = useState(PLAYERS);
+    
+    const gameBoard = deriveGameBoard(gameTurns);
+
+    const winner=deriveWinner(gameBoard,players);
 
     const isDraw = gameTurns.length === 9 && !winner;
   const activePLayer = deriveActivePlayer(gameTurns);
   function handleSelectSquare(rowIndex,colIndex){
-    // setActivePlayer((currActivePlayer) => currActivePlayer === 'X' ?'O' : 'X');
   
     setGameTurns((prevTurns)=>{
 
@@ -68,13 +81,17 @@ function App() {
     setGameTurns([]);
   }
 
+  function handlePlayerNameChange(symbol,name){
+    setPlayers(prevPlayers => ({...prevPlayers,[symbol]: name}));
+  }
+
   return (
   <main>
     <div id="game-container">
      <ol id="players" className="highlight-player">
      
-     <Player initialName="Player 1" symbol="X" isActive={activePLayer==='X'}  />
-     <Player initialName="Player 2" symbol="O" isActive={activePLayer==='O'} />
+     <Player initialName={PLAYERS.X} symbol="X" isActive={activePLayer==='X'}  onChangeName ={handlePlayerNameChange}/>
+     <Player initialName={PLAYERS.O} symbol="O" isActive={activePLayer==='O'}  onChangeName ={handlePlayerNameChange}/>
 
      </ol>
     {(winner || isDraw) && <GameOver winner = {winner}  onRestart = {handleRestart}/>}
